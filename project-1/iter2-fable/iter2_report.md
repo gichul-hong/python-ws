@@ -63,14 +63,35 @@ Flatten → FC(2304→512)-BN-ReLU-Dropout(0.5) → FC(512→43)
 | 학습 시간 | 50 epochs 약 8분 (RTX 2060, batch=128) |
 | 환경 | conda `gpu-torch`, Python 3.12, PyTorch 2.5.1+cu121 |
 
-## 6. 추가 개선 방향
+## 6. Test 예측 분포 검증 (`check_dist.py`)
+
+P0.1 강의자료 10p의 test 라벨 분포 차트(60/210/420 3단계)는 **train 클래스 수 ÷ 3**과 정확히 일치하고 총합도 8,670으로 test 이미지 수와 같다. 이를 기대 분포로 삼아 `result.csv` 예측 분포와 비교했다.
+
+| 지표 | 값 |
+|------|----|
+| 총합 | 예측 8,670 = 기대 8,670 |
+| Pearson 상관 | 0.9992 |
+| 절대 오차 합 | 184 (전체의 2.12%) |
+| Chi-square | 14.5 (df=42 대비 매우 작음 → 분포 일치) |
+| diff=0 클래스 | 43개 중 12개 |
+
+**주요 편차 클래스**
+- 과소 예측: class 12 (−23), class 38 (−15)
+- 과대 예측: class 20 (+14), class 11 (+14), class 34 (+13), class 32 (+11)
+
+**해석**
+- 예측 분포가 기대 분포와 전반적으로 잘 일치하며 특정 클래스 붕괴는 없음.
+- 오분류 1건은 diff 두 칸(−1/+1)에 기여하므로 절대 오차 합 184 → **최소 92건(≈1.06%) 오분류 존재**라는 하한이 나옴. 즉 실제 test 정확도 상한은 약 **98.94%**로 val(0.9998)보다 낮을 것으로 추정.
+- 혼동 방향 추정: 12(priority road)↔11(right-of-way), 38(keep right)↔34(turn left ahead)/20(dangerous curve right) 등 시각적으로 유사한 표지판 간 혼동 가능성이 높음 → iter3에서 ensemble + 해당 클래스 집중 증강으로 대응.
+
+## 7. 추가 개선 방향
 
 1. **Ensemble**: seed 3~5개로 학습 후 soft voting — val이 사실상 포화(오분류 ~1건)라 test 일반화 확보 목적
 2. **Pretrained backbone**: ResNet-18/EfficientNet transfer learning (해상도 96+ 필요)
 3. **Mixup/CutMix**: 추가 정규화 — 현 수준에서는 효과 제한적일 수 있음
 4. **전체 데이터 재학습**: val split 없이 26,010장 전부로 최종 모델 학습 후 제출
 
-## 7. 참고 사항
+## 8. 참고 사항
 
 - `DATA_ROOT` 하드코딩 (`C:\hong\python-ws\project-1\dataset\data 2`) — 환경에 따라 수정 필요
 - test id 순서는 상위 `result.csv` 템플릿을 그대로 따르므로 row 순서 변경 없음
