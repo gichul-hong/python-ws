@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inference Viewer</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --primary: #3b82f6;
+            --accent: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: -webkit-linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        select, input {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--primary);
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 15px;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        .img-container {
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #0f172a;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .card img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .card-info {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .filename {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 5px;
+        }
+
+        .class-label {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--accent);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+
+        button:disabled {
+            background-color: #475569;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            font-size: 1.1rem;
+        }
+
+        #loading {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--primary);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🚦 Traffic Sign Inference Viewer</h1>
+        <p>project-1/iter6-fable 결과 및 Test 이미지 시각화</p>
+    </header>
+
+    <div class="controls">
+        <select id="classFilter">
+            <option value="all">모든 클래스 보기</option>
+            <!-- 클래스 옵션이 동적으로 추가됩니다 -->
+        </select>
+        <select id="sortOrder">
+            <option value="id_asc">ID 오름차순</option>
+            <option value="id_desc">ID 내림차순</option>
+            <option value="class_asc">클래스 오름차순</option>
+            <option value="class_desc">클래스 내림차순</option>
+        </select>
+        <span class="page-info" id="totalCount"></span>
+    </div>
+
+    <div id="loading">데이터를 불러오는 중...</div>
+    <div class="gallery" id="gallery"></div>
+
+    <div class="pagination">
+        <button id="prevBtn" onclick="changePage(-1)">이전</button>
+        <span class="page-info" id="pageInfo">페이지 1 / 1</span>
+        <button id="nextBtn" onclick="changePage(1)">다음</button>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+        const itemsPerPage = 100;
+        let currentPage = 1;
+
+        const classFilter = document.getElementById('classFilter');
+        const sortOrder = document.getElementById('sortOrder');
+        const gallery = document.getElementById('gallery');
+        const pageInfo = document.getElementById('pageInfo');
+        const totalCount = document.getElementById('totalCount');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const loading = document.getElementById('loading');
+
+        async function init() {
+            loading.style.display = 'block';
+            try {
+                // Fetch CSV file
+                const response = await fetch('./iter6-fable/result.csv');
+                const text = await response.text();
+                
+                // Parse CSV (id,class)
+                const lines = text.trim().split('\n');
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i]) continue;
+                    const parts = lines[i].split(',');
+                    allData.push({
+                        id: parts[0].trim(),
+                        classId: parseInt(parts[1].trim())
+                    });
+                }
+                
+                // Populate class filter
+                const uniqueClasses = [...new Set(allData.map(d => d.classId))].sort((a, b) => a - b);
+                uniqueClasses.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c;
+                    option.textContent = `클래스 ${c}`;
+                    classFilter.appendChild(option);
+                });
+
+                applyFilters();
+
+            } catch (err) {
+                gallery.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444;">데이터를 불러오는 데 실패했습니다. 서버가 실행 중인지 확인하세요. (${err.message})</div>`;
+            }
+            loading.style.display = 'none';
+        }
+
+        function applyFilters() {
+            const classVal = classFilter.value;
+            const sortVal = sortOrder.value;
+
+            // Filter
+            if (classVal === 'all') {
+                filteredData = [...allData];
+            } else {
+                const targetClass = parseInt(classVal);
+                filteredData = allData.filter(d => d.classId === targetClass);
+            }
+
+            // Sort
+            filteredData.sort((a, b) => {
+                if (sortVal === 'id_asc') return a.id.localeCompare(b.id);
+                if (sortVal === 'id_desc') return b.id.localeCompare(a.id);
+                if (sortVal === 'class_asc') return a.classId - b.classId || a.id.localeCompare(b.id);
+                if (sortVal === 'class_desc') return b.classId - a.classId || a.id.localeCompare(b.id);
+                return 0;
+            });
+
+            totalCount.textContent = `총 ${filteredData.length}개 이미지`;
+            currentPage = 1;
+            renderGallery();
+        }
+
+        function renderGallery() {
+            gallery.innerHTML = '';
+            
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            pageInfo.textContent = `페이지 ${currentPage} / ${totalPages}`;
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageData = filteredData.slice(start, end);
+
+            pageData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                // Construct image path
+                const imgSrc = `./dataset/data 2/Test/${item.id}`;
+                
+                card.innerHTML = `
+                    <div class="img-container">
+                        <img src="${imgSrc}" alt="${item.id}" loading="lazy" onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'50\\' height=\\'50\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'%2394a3b8\\' stroke-width=\\'2\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'%3E%3Ccircle cx=\\'12\\' cy=\\'12\\' r=\\'10\\'/%3E%3Cline x1=\\'12\\' y1=\\'8\\' x2=\\'12\\' y2=\\'12\\'/%3E%3Cline x1=\\'12\\' y1=\\'16\\' x2=\\'12.01\\' y2=\\'16\\'/%3E%3C/svg%3E';">
+                    </div>
+                    <div class="card-info">
+                        <div class="filename">${item.id}</div>
+                        <div class="class-label">Class ${item.classId}</div>
+                    </div>
+                `;
+                gallery.appendChild(card);
+            });
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            renderGallery();
+        }
+
+        classFilter.addEventListener('change', applyFilters);
+        sortOrder.addEventListener('change', applyFilters);
+
+        // Run
+        init();
+    </script>
+</body>
+</html>
