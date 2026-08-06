@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CS vs Iter12 Comparison Viewer</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: #fff; margin: 20px; }
+        .controls { margin-bottom: 20px; padding: 15px; background: #1e1e1e; border-radius: 8px; }
+        select, button { padding: 8px; margin-right: 10px; background: #333; color: white; border: 1px solid #555; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .card { background: #222; border-radius: 8px; padding: 15px; text-align: center; border: 1px solid #444; }
+        .card img { max-width: 100%; height: auto; border-radius: 4px; margin-bottom: 10px; }
+        .label { font-size: 14px; margin: 4px 0; }
+        .cs-pred { color: #4ade80; font-weight: bold; }
+        .us-pred { color: #f87171; font-weight: bold; }
+        .conf { font-size: 12px; color: #aaa; }
+    </style>
+</head>
+<body>
+    <h2>CS Model vs Iter12 Differences</h2>
+    <div class="controls">
+        <label>Filter by Iter12's Class: </label>
+        <select id="classFilter" onchange="render()">
+            <option value="all">All Differences</option>
+        </select>
+        <span style="margin-left:20px;">Differences found: <span id="count">0</span></span>
+    </div>
+    <div class="grid" id="grid"></div>
+
+    <script>
+        const data = [{"id": "00066.png", "cs_class": 26, "iter12_class": 18, "iter12_conf": 2.2964072227478027, "path": "dataset/data 2/Test/00066.png"}, {"id": "00072.png", "cs_class": 11, "iter12_class": 30, "iter12_conf": 2.885862350463867, "path": "dataset/data 2/Test/00072.png"}, {"id": "00127.png", "cs_class": 11, "iter12_class": 30, "iter12_conf": 1.5946897268295288, "path": "dataset/data 2/Test/00127.png"}, {"id": "00237.png", "cs_class": 11, "iter12_class": 20, "iter12_conf": 1.396761178970337, "path": "dataset/data 2/Test/00237.png"}, {"id": "00287.png", "cs_class": 11, "iter12_class": 30, "iter12_conf": 3.38511323928833, "path": "dataset/data 2/Test/00287.png"}, {"id": "00309.png", "cs_class": 38, "iter12_class": 40, "iter12_conf": 1.8226439952850342, "path": "dataset/data 2/Test/00309.png"}, {"id": "00339.png", "cs_class": 25, "iter12_class": 22, "iter12_conf": 2.1157784461975098, "path": "dataset/data 2/Test/00339.png"}, {"id": "00492.png", "cs_class": 4, "iter12_class": 1, "iter12_conf": 1.4989392757415771, "path": "dataset/data 2/Test/00492.png"}, {"id": "00496.png", "cs_class": 11, "iter12_class": 30, "iter12_conf": 1.9930267333984375, "path": "dataset/data 2/Test/00496.png"}, {"id": "00513.png", "cs_class": 25, "iter12_class": 22, "iter12_conf": 4.270525932312012, "path": "dataset/data 2/Test/00513.png"}, {"id": "00859.png", "cs_class": 11, "iter12_class": 30, "iter12_conf": 2.389039993286133, "path": "dataset/data 2/Test/00859.png"}, {"id": "01189.png", "cs_class": 12, "iter12_class": 26, "iter12_conf": 1.556814432144165, "path": "dataset/data 2/Test/01189.png"}, {"id": "01317.png", "cs_class": 11, "iter12_class": 25, "iter12_conf": 3.160482883453369, "path": "dataset/data 2/Test/01317.png"}, {"id": "01402.png", "cs_class": 11, "iter12_class": 30, "iter12_conf": 1.43719482421875, "path": "dataset/data 2/Test/01402.png"}, {"id": "01489.png", "cs_class": 13, "iter12_class": 15, "iter12_conf": 0.9497280716896057, "path": "dataset/data 2/Test/01489.png"}, {"id": "02258.png", "cs_class": 12, "iter12_class": 26, "iter12_conf": 1.133298635482788, "path": "dataset/data 2/Test/02258.png"}, {"id": "02342.png", "cs_class": 21, "iter12_class": 18, "iter12_conf": 1.9506479501724243, "path": "dataset/data 2/Test/02342.png"}, {"id": "02577.png", "cs_class": 25, "iter12_class": 4, "iter12_conf": 0.9383878707885742, "path": "dataset/data 2/Test/02577.png"}, {"id": "02601.png", "cs_class": 15, "iter12_class": 38, "iter12_conf": 2.3571584224700928, "path": "dataset/data 2/Test/02601.png"}, {"id": "03173.png", "cs_class": 13, "iter12_class": 38, "iter12_conf": 1.8813018798828125, "path": "dataset/data 2/Test/03173.png"}, {"id": "03567.png", "cs_class": 11, "iter12_class": 30, "iter12_conf": 0.9939637184143066, "path": "dataset/data 2/Test/03567.png"}, {"id": "03704.png", "cs_class": 13, "iter12_class": 40, "iter12_conf": 1.3413211107254028, "path": "dataset/data 2/Test/03704.png"}, {"id": "03744.png", "cs_class": 12, "iter12_class": 26, "iter12_conf": 1.4466676712036133, "path": "dataset/data 2/Test/03744.png"}, {"id": "03778.png", "cs_class": 11, "iter12_class": 30, "iter12_conf": 1.718772530555725, "path": "dataset/data 2/Test/03778.png"}, {"id": "03793.png", "cs_class": 12, "iter12_class": 26, "iter12_conf": 1.5008411407470703, "path": "dataset/data 2/Test/03793.png"}, {"id": "03960.png", "cs_class": 21, "iter12_class": 31, "iter12_conf": 1.5354902744293213, "path": "dataset/data 2/Test/03960.png"}, {"id": "04341.png", "cs_class": 12, "iter12_class": 26, "iter12_conf": 1.7427195310592651, "path": "dataset/data 2/Test/04341.png"}, {"id": "04384.png", "cs_class": 12, "iter12_class": 9, "iter12_conf": 1.3288291692733765, "path": "dataset/data 2/Test/04384.png"}, {"id": "04983.png", "cs_class": 12, "iter12_class": 26, "iter12_conf": 2.1486423015594482, "path": "dataset/data 2/Test/04983.png"}, {"id": "05095.png", "cs_class": 25, "iter12_class": 22, "iter12_conf": 3.878575563430786, "path": "dataset/data 2/Test/05095.png"}, {"id": "05134.png", "cs_class": 25, "iter12_class": 22, "iter12_conf": 3.360752582550049, "path": "dataset/data 2/Test/05134.png"}, {"id": "05182.png", "cs_class": 12, "iter12_class": 26, "iter12_conf": 1.30000901222229, "path": "dataset/data 2/Test/05182.png"}, {"id": "05352.png", "cs_class": 30, "iter12_class": 11, "iter12_conf": 2.5181007385253906, "path": "dataset/data 2/Test/05352.png"}, {"id": "05529.png", "cs_class": 12, "iter12_class": 26, "iter12_conf": 1.5357508659362793, "path": "dataset/data 2/Test/05529.png"}, {"id": "05892.png", "cs_class": 13, "iter12_class": 40, "iter12_conf": 0.7804630994796753, "path": "dataset/data 2/Test/05892.png"}, {"id": "06129.png", "cs_class": 13, "iter12_class": 38, "iter12_conf": 1.5082721710205078, "path": "dataset/data 2/Test/06129.png"}, {"id": "06155.png", "cs_class": 11, "iter12_class": 25, "iter12_conf": 2.594935417175293, "path": "dataset/data 2/Test/06155.png"}, {"id": "06980.png", "cs_class": 25, "iter12_class": 22, "iter12_conf": 3.399587631225586, "path": "dataset/data 2/Test/06980.png"}, {"id": "07279.png", "cs_class": 12, "iter12_class": 26, "iter12_conf": 0.8372594118118286, "path": "dataset/data 2/Test/07279.png"}, {"id": "07597.png", "cs_class": 31, "iter12_class": 20, "iter12_conf": 2.0028488636016846, "path": "dataset/data 2/Test/07597.png"}, {"id": "08427.png", "cs_class": 15, "iter12_class": 13, "iter12_conf": 1.165737271308899, "path": "dataset/data 2/Test/08427.png"}, {"id": "09797.png", "cs_class": 11, "iter12_class": 30, "iter12_conf": 2.6733384132385254, "path": "dataset/data 2/Test/09797.png"}];
+        
+        // Populate class dropdown based on existing diffs
+        const classSelect = document.getElementById('classFilter');
+        const uniqueClasses = [...new Set(data.map(d => d.iter12_class))].sort((a,b)=>a-b);
+        uniqueClasses.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.innerText = `Iter12 predicted Class ${c}`;
+            classSelect.appendChild(opt);
+        });
+
+        function render() {
+            const classVal = classSelect.value;
+            let filtered = data;
+            
+            if(classVal !== 'all') {
+                filtered = filtered.filter(d => d.iter12_class == parseInt(classVal));
+            }
+            
+            // Sort by iter12 confidence (lowest first)
+            filtered.sort((a,b) => a.iter12_conf - b.iter12_conf);
+            
+            document.getElementById('count').innerText = filtered.length;
+            
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            
+            filtered.forEach(d => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <img src="${d.path}" loading="lazy" onerror="this.src=''" alt="${d.id}">
+                    <div style="font-size: 12px; color: #888; margin-bottom: 8px;">${d.id}</div>
+                    <div class="label cs-pred">CS Model: Class ${d.cs_class}</div>
+                    <div class="label us-pred">Iter12: Class ${d.iter12_class}</div>
+                    <div class="conf">(Iter12 Conf: ${(d.iter12_conf * 100).toFixed(2)}%)</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        
+        render();
+    </script>
+</body>
+</html>
