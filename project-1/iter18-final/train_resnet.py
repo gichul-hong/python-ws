@@ -200,7 +200,7 @@ class ResNetWithFeatures(nn.Module):
         return logits
 
 def build_model():
-    m = ConvNeXtWithConcatPool(NUM_CLASSES)
+    m = ResNetWithFeatures(NUM_CLASSES)
     return m.to(DEVICE)
 
 
@@ -366,8 +366,8 @@ print('\n  WATCH pairs (iter8에서 관측된 혼동):')
 for i, j in WATCH_PAIRS:
     print(f'    {i:>2} -> {j:>2}: {cm[i, j]}')
 
-np.save(os.path.join(OUT_DIR, 'conv_oof_probs.npy'), oof_probs)
-np.save(os.path.join(OUT_DIR, 'conv_oof_labels.npy'), labels)
+np.save(os.path.join(OUT_DIR, 'resnet_oof_probs.npy'), oof_probs)
+np.save(os.path.join(OUT_DIR, 'resnet_oof_labels.npy'), labels)
 
 # ---------------- Test 추론 (3-fold 모델 앙상블) ----------------
 print('\n[5] Test inference (3-fold model ensemble x 4 TTA)...')
@@ -391,7 +391,7 @@ for f, m in enumerate(models):
 predictions = test_probs.argmax(1)
 result_df['class'] = predictions.astype(int)
 result_df.to_csv(os.path.join(OUT_DIR, 'resnet_result.csv'), index=False)
-np.save(os.path.join(OUT_DIR, 'conv_test_probs.npy'), test_probs)
+np.save(os.path.join(OUT_DIR, 'resnet_test_probs.npy'), test_probs)
 print(f'  Saved {len(predictions)} predictions to resnet_result.csv')
 
 # 분포 프록시 (진단 전용)
